@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>EASTC Attendance System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --ink: #0a0f1e;
+  --ink2: #1a2540;
+  --ink3: #2d3a5a;
+  --blue: #1752e8;
+  --blue2: #3b6ff0;
+  --gold: #e8a020;
+  --gold2: #f5c048;
+  --green: #0d9e5c;
+  --green-bg: #e8f8f1;
+  --red: #d62828;
+  --red-bg: #fdeaea;
+  --amber: #c47d0e;
+  --amber-bg: #fef6e4;
+  --bg: #f0f3fa;
+  --card: #ffffff;
+  --border: #dce3f0;
+  --muted: #6b7a99;
+  --radius: 18px;
+  --rsm: 10px;
+  --shadow: 0 2px 20px rgba(10,15,30,0.08);
+  --shadow-lg: 0 8px 40px rgba(10,15,30,0.16);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:15px;}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--ink);height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.5rem;position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 20px rgba(0,0,0,0.3);
+}
+.topbar-logo{
+  font-size:1.05rem;font-weight:800;color:#fff;
+  display:flex;align-items:center;gap:10px;letter-spacing:0.3px;
+}
+.topbar-logo .chip{
+  background:var(--gold);color:var(--ink);
+  font-size:9px;font-weight:700;padding:3px 8px;
+  border-radius:20px;letter-spacing:1.5px;
+}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.clock-disp{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold2);letter-spacing:2px;}
+.role-chip{
+  font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;
+  border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.7);cursor:pointer;
+}
+.role-chip.owner-chip{background:rgba(232,160,32,0.2);border-color:var(--gold);color:var(--gold2);}
+.role-chip.lect-chip{background:rgba(23,82,232,0.25);border-color:var(--blue2);color:#90b4ff;}
+.role-chip.student-chip{background:rgba(13,158,92,0.2);border-color:var(--green);color:#5fd4a0;}
+
+/* ── LOGIN SCREEN ── */
+.login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--ink) 0%,var(--ink2) 50%,#0a1a3a 100%);
+  padding:2rem;
+}
+.login-box{
+  background:var(--card);border-radius:var(--radius);padding:2.5rem;
+  width:100%;max-width:420px;box-shadow:var(--shadow-lg);
+  text-align:center;
+}
+.login-logo{font-size:2.5rem;margin-bottom:12px;}
+.login-title{font-size:1.4rem;font-weight:800;color:var(--ink);margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:2rem;}
+.role-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1.5rem;}
+.role-card{
+  padding:1rem 0.75rem;border:2px solid var(--border);border-radius:var(--rsm);
+  cursor:pointer;text-align:center;transition:all 0.18s;background:var(--bg);
+}
+.role-card:hover{border-color:var(--blue);background:#eef3ff;transform:translateY(-2px);}
+.role-card.selected{border-color:var(--blue);background:var(--blue);color:white;}
+.role-card .rc-icon{font-size:22px;margin-bottom:6px;}
+.role-card .rc-name{font-size:12px;font-weight:700;}
+.role-card.selected .rc-name{color:white;}
+.pin-wrap{margin-bottom:1rem;}
+.pin-wrap input{
+  text-align:center;font-family:'JetBrains Mono',monospace;
+  font-size:22px;letter-spacing:8px;font-weight:700;
+}
+
+/* ── TABS ── */
+.tabbar{
+  background:var(--card);border-bottom:1px solid var(--border);
+  display:flex;overflow-x:auto;position:sticky;top:58px;z-index:100;
+  box-shadow:0 1px 10px rgba(10,15,30,0.06);
+}
+.tab{
+  padding:14px 20px;border:none;background:transparent;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;
+  color:var(--muted);cursor:pointer;white-space:nowrap;
+  border-bottom:3px solid transparent;transition:all 0.18s;
+  display:flex;align-items:center;gap:6px;
+}
+.tab:hover{color:var(--ink);background:var(--bg);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;}
+
+/* ── PANELS ── */
+.panel{display:none;}
+.panel.active{display:block;animation:fadeUp 0.2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CONTAINER ── */
+.wrap{max-width:1060px;margin:0 auto;padding:1.5rem 1rem;}
+
+/* ── CARDS ── */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem;
+  box-shadow:var(--shadow);margin-bottom:1.25rem;
+}
+.card-hd{
+  font-size:0.95rem;font-weight:700;color:var(--ink);
+  margin-bottom:1.25rem;display:flex;align-items:center;gap:10px;
+}
+.hd-icon{
+  width:30px;height:30px;border-radius:8px;
+  background:var(--ink);color:var(--gold2);
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;
+}
+
+/* ── SESSION BAR ── */
+.sbar{
+  border-radius:var(--radius);padding:1rem 1.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1.25rem;flex-wrap:wrap;gap:10px;
+}
+.sbar.idle{background:var(--card);border:1px solid var(--border);}
+.sbar.live{background:var(--ink);box-shadow:var(--shadow-lg);}
+.sbar-left{display:flex;align-items:center;gap:12px;}
+.sdot{width:9px;height:9px;border-radius:50%;}
+.sbar.live .sdot{background:#4ade80;box-shadow:0 0 8px #4ade80;animation:blink 1.4s infinite;}
+.sbar.idle .sdot{background:#ccc;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+.slbl{font-size:11px;}
+.sbar.live .slbl{color:rgba(255,255,255,0.6);}
+.sbar.idle .slbl{color:var(--muted);}
+.shall{font-size:16px;font-weight:700;}
+.sbar.live .shall{color:#fff;}
+.sbar.idle .shall{color:var(--muted);}
+.sbar-right{font-size:12px;}
+.sbar.live .sbar-right{color:rgba(255,255,255,0.55);}
+.sbar.idle .sbar-right{color:var(--muted);}
+
+/* ── HALLS ── */
+.halls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.hcard{
+  border:2px solid var(--border);border-radius:var(--radius);
+  padding:1rem;cursor:pointer;text-align:center;
+  transition:all 0.18s;background:var(--bg);position:relative;
+}
+.hcard:hover{border-color:var(--blue2);background:#eef3ff;transform:translateY(-2px);}
+.hcard.sel{border-color:var(--ink);background:var(--ink);box-shadow:0 4px 16px rgba(10,15,30,0.25);transform:translateY(-2px);}
+.hcard.open{border-color:var(--green);background:var(--green-bg);}
+.hcard.open .hnm{color:var(--green);}
+.hcard.sel .hnm{color:var(--gold2);}
+.hcard.sel .hsub{color:rgba(255,255,255,0.5);}
+.hico{font-size:24px;margin-bottom:5px;}
+.hnm{font-size:13px;font-weight:700;}
+.hsub{font-size:10px;color:var(--muted);margin-top:3px;}
+.open-tag{
+  position:absolute;top:-8px;right:8px;
+  background:var(--green);color:#fff;
+  font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:0.5px;
+}
+.gps-tag{
+  position:absolute;top:-8px;left:8px;
+  background:var(--blue);color:#fff;
+  font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;
+}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:10px 20px;border:none;border-radius:var(--rsm);
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all 0.16s;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.btn-ink{background:var(--ink);color:#fff;}
+.btn-ink:hover{background:var(--ink2);}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-blue:hover{background:var(--blue2);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:#0b8a4f;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover{background:#b82020;}
+.btn-gold{background:var(--gold);color:var(--ink);}
+.btn-gold:hover{background:var(--gold2);}
+.btn-out{background:transparent;color:var(--ink);border:1.5px solid var(--border);}
+.btn-out:hover{border-color:var(--ink);background:var(--bg);}
+.btn-lg{padding:13px 28px;font-size:15px;width:100%;justify-content:center;}
+.btn:active{transform:scale(0.98);}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem;}
+
+/* ── FORMS ── */
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:5px;}
+input[type=text],input[type=number],input[type=password],select,textarea{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rsm);
+  font-family:'Outfit',sans-serif;font-size:14px;color:var(--ink);
+  background:#fff;outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(23,82,232,0.1);}
+
+/* ── GPS PANEL ── */
+.gps-box{
+  border-radius:var(--rsm);padding:12px 16px;
+  display:flex;align-items:flex-start;gap:10px;font-size:13px;font-weight:600;
+  border-left:4px solid;margin-bottom:12px;
+}
+.gps-box.checking{background:var(--amber-bg);color:var(--amber);border-color:var(--gold);}
+.gps-box.ok{background:var(--green-bg);color:var(--green);border-color:var(--green);}
+.gps-box.fail{background:var(--red-bg);color:var(--red);border-color:var(--red);}
+.gps-box.bypass{background:#f5f7ff;color:var(--muted);border-color:var(--border);}
+.gps-accuracy{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:8px 12px;color:var(--muted);margin-top:8px;line-height:1.6;
+}
+
+/* ── QR ── */
+.qr-frame{
+  background:#fff;border:2px solid var(--ink);border-radius:var(--radius);
+  padding:1.5rem;text-align:center;display:inline-block;box-shadow:var(--shadow-lg);
+}
+.qr-frame-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px;}
+.qr-code-big{
+  font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;
+  color:var(--ink);letter-spacing:8px;margin-top:12px;
+  background:var(--bg);padding:10px 20px;border-radius:var(--rsm);display:inline-block;
+}
+.qr-frame-sub{font-size:11px;color:var(--muted);margin-top:8px;}
+.qr-center{display:flex;justify-content:center;margin:1rem 0;}
+#qr-code img,#qr-code canvas{border-radius:6px;}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center;box-shadow:var(--shadow);}
+.stat-n{font-size:2.2rem;font-weight:800;color:var(--ink);line-height:1;}
+.stat-l{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-top:4px;}
+.pbar-wrap{background:var(--border);border-radius:10px;height:6px;overflow:hidden;margin-bottom:1.25rem;}
+.pbar{height:100%;border-radius:10px;background:var(--blue);transition:width 0.5s;}
+
+/* ── FEEDBACK ── */
+.fb{
+  padding:12px 16px;border-radius:var(--rsm);font-weight:600;font-size:13px;
+  display:none;align-items:center;gap:10px;animation:fadeUp 0.2s;border-left:4px solid;
+}
+.fb.show{display:flex;}
+.fb.ok{background:var(--green-bg);color:var(--green);border-color:var(--green);}
+.fb.err{background:var(--red-bg);color:var(--red);border-color:var(--red);}
+.fb.warn{background:var(--amber-bg);color:var(--amber);border-color:var(--gold);}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--rsm);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--ink);color:#fff;padding:10px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.7px;text-transform:uppercase;}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#f5f7ff;}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.3px;}
+.b-green{background:var(--green-bg);color:var(--green);}
+.b-red{background:var(--red-bg);color:var(--red);}
+.b-blue{background:#eef3ff;color:var(--blue);}
+.b-amber{background:var(--amber-bg);color:var(--amber);}
+.b-gray{background:#f1f3f8;color:var(--muted);}
+.b-ink{background:var(--ink);color:#fff;}
+
+/* ── SECURITY LOG ── */
+.log-entry{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  padding:8px 12px;border-radius:6px;margin-bottom:4px;
+  display:flex;gap:10px;align-items:flex-start;
+}
+.log-entry.ok{background:var(--green-bg);color:#065f46;}
+.log-entry.bad{background:var(--red-bg);color:#991b1b;}
+.log-entry.warn{background:var(--amber-bg);color:#92400e;}
+.log-time{opacity:0.6;flex-shrink:0;}
+
+/* ── STEP INDICATOR ── */
+.steps{display:flex;gap:0;margin-bottom:1.5rem;}
+.step{
+  flex:1;padding:10px;text-align:center;font-size:12px;font-weight:600;
+  border-bottom:3px solid var(--border);color:var(--muted);position:relative;
+}
+.step.done{border-bottom-color:var(--green);color:var(--green);}
+.step.active{border-bottom-color:var(--blue);color:var(--blue);}
+.step-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:20px;height:20px;border-radius:50%;border:2px solid currentColor;
+  font-size:10px;margin-right:6px;
+}
+.step.done .step-num{background:var(--green);border-color:var(--green);color:#fff;}
+
+/* ── UPLOAD ── */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:var(--radius);padding:2.5rem;
+  text-align:center;cursor:pointer;transition:all 0.2s;background:var(--bg);
+}
+.upload-zone:hover{border-color:var(--blue);background:#eef3ff;}
+#file-input{display:none;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  padding:12px 18px;border-radius:var(--rsm);font-weight:700;font-size:13px;
+  color:#fff;z-index:9999;display:none;align-items:center;gap:8px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.2);animation:slideIn 0.3s ease;
+}
+@keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.show{display:flex;}
+.toast.t-ok{background:var(--green);}
+.toast.t-err{background:var(--red);}
+.toast.t-warn{background:var(--amber);}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(10,15,30,0.6);z-index:500;align-items:center;justify-content:center;padding:1rem;}
+.modal-bg.show{display:flex;}
+.modal{background:#fff;border-radius:var(--radius);padding:2rem;max-width:440px;width:100%;box-shadow:var(--shadow-lg);animation:fadeUp 0.2s;}
+.modal-title{font-size:1.05rem;font-weight:800;color:var(--ink);margin-bottom:1rem;}
+
+/* ── MISC ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+.empty{text-align:center;padding:2.5rem;color:var(--muted);}
+.empty-ico{font-size:36px;margin-bottom:8px;}
+.empty-t{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.empty-s{font-size:12px;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.sec-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.25rem;}
+.sbadge{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid;}
+.sbadge.on{background:var(--green-bg);color:var(--green);border-color:#86efac;}
+.sbadge.off{background:var(--red-bg);color:var(--red);border-color:#fca5a5;}
+.sdot2{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+@media(max-width:640px){
+  .halls{grid-template-columns:1fr 1fr;}
+  .stats{grid-template-columns:1fr 1fr;}
+  .g2{grid-template-columns:1fr;}
+  .role-cards{grid-template-columns:1fr 1fr 1fr;}
+  .tab span{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ LOGIN SCREEN ════════════════ -->
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🎓</div>
+    <div class="login-title">EASTC Attendance</div>
+    <div class="login-sub">BDS 1 — 2026 &nbsp;|&nbsp; Secure Sign-In System</div>
+
+    <div style="margin-bottom:1rem;">
+      <label>Select Your Role</label>
+      <div class="role-cards">
+        <div class="role-card" onclick="selectRole('owner')" id="rc-owner">
+          <div class="rc-icon">👑</div>
+          <div class="rc-name">Owner</div>
+        </div>
+        <div class="role-card" onclick="selectRole('lecturer')" id="rc-lecturer">
+          <div class="rc-icon">🎓</div>
+          <div class="rc-name">Lecturer</div>
+        </div>
+        <div class="role-card" onclick="selectRole('student')" id="rc-student">
+          <div class="rc-icon">✍️</div>
+          <div class="rc-name">Student</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="pin-section" style="display:none;margin-bottom:1rem;">
+      <label id="pin-label">Enter PIN</label>
+      <input type="password" id="pin-input" maxlength="6" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+
+    <button class="btn btn-ink btn-lg" onclick="doLogin()" style="margin-bottom:1rem;">Enter System →</button>
+    <div id="login-fb" class="fb" style="justify-content:center;"></div>
+    <p style="font-size:11px;color:var(--muted);margin-top:1rem;">Default PINs &nbsp;|&nbsp; Owner: <strong>0000</strong> &nbsp;|&nbsp; Lecturer: <strong>1234</strong> &nbsp;|&nbsp; Students: no PIN</p>
+  </div>
+</div>
+
+<!-- ════════════════ MAIN APP ════════════════ -->
+<div id="main-app" style="display:none;">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">EASTC <span class="chip">SECURE v3</span></div>
+  <div class="topbar-right">
+    <div id="sess-hdr-pill" class="role-chip">No Session</div>
+    <div class="clock-disp" id="clock">--:--:--</div>
+    <div id="role-hdr" class="role-chip" onclick="logout()" title="Click to logout" style="cursor:pointer;">Logout</div>
+  </div>
+</div>
+
+<!-- TABBAR -->
+<div class="tabbar" id="tabbar"></div>
+
+<!-- PANELS CONTAINER -->
+<div class="wrap" id="panels-wrap"></div>
+
+</div><!-- /main-app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="t-ico"></span><span id="t-msg"></span></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   CONFIGURATION — CHANGE THESE PINS
+═══════════════════════════════════════════════ */
+const CONFIG = {
+  ownerPIN:    localStorage.getItem('cfg_ownerPIN')    || '0000',
+  lecturerPIN: localStorage.getItem('cfg_lecturerPIN') || '1234',
+  gpsRadius:   parseFloat(localStorage.getItem('cfg_gpsRadius') || '5'), // metres — 1–5m for 1m precision
+  gpsEnabled:  localStorage.getItem('cfg_gpsEnabled') !== 'false',
+};
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let students   = JSON.parse(localStorage.getItem('e3_students')   || '[]');
+let attendance = JSON.parse(localStorage.getItem('e3_attendance') || '[]');
+let otcMap     = JSON.parse(localStorage.getItem('e3_otc')        || '{}');
+let usedOTC    = JSON.parse(localStorage.getItem('e3_usedOTC')    || '[]');
+let deviceLog  = JSON.parse(localStorage.getItem('e3_devices')    || '{}');
+let secLog     = JSON.parse(localStorage.getItem('e3_seclog')     || '[]');
+let session    = JSON.parse(localStorage.getItem('e3_session')    || 'null');
+let hallGPS    = JSON.parse(localStorage.getItem('e3_hallgps')    || '{}');
+
+let currentRole   = null;
+let selectedHall  = null;
+let codeVerified  = false;
+let gpsOK         = false;
+let userLat       = null;
+let userLng       = null;
+let userAccuracy  = null;
+
+const HALLS = [
+  {id:'temple',   name:'Temple Hall',   icon:'🏛️'},
+  {id:'function', name:'Function Hall', icon:'🏢'},
+  {id:'datalab',  name:'Data Lab',      icon:'💻'},
+  {id:'theatreg', name:'Theatre G',     icon:'🎭'},
+  {id:'icp',      name:'ICP Room',      icon:'🖥️'},
+  {id:'computer', name:'Computer Room', icon:'🖨️'},
+];
+
+/* ═══════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════ */
+function selectRole(role) {
+  document.querySelectorAll('.role-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('rc-'+role).classList.add('selected');
+  currentRole = role;
+  const ps = document.getElementById('pin-section');
+  const pl = document.getElementById('pin-label');
+  if(role==='student'){ ps.style.display='none'; }
+  else { ps.style.display='block'; pl.textContent=role==='owner'?'Owner PIN':'Lecturer PIN'; document.getElementById('pin-input').value=''; document.getElementById('pin-input').focus(); }
+  hideFB('login-fb');
+}
+
+function doLogin() {
+  if(!currentRole){ showFB('login-fb','err','⚠️','Select your role first'); return; }
+  if(currentRole==='student'){ launchApp('student'); return; }
+  const pin = document.getElementById('pin-input').value.trim();
+  if(currentRole==='owner'  && pin!==CONFIG.ownerPIN)   { showFB('login-fb','err','❌','Wrong owner PIN');    return; }
+  if(currentRole==='lecturer'&& pin!==CONFIG.lecturerPIN){ showFB('login-fb','err','❌','Wrong lecturer PIN'); return; }
+  launchApp(currentRole);
+}
+
+function launchApp(role) {
+  currentRole = role;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  buildTabs();
+  updateSbars(); updateStats(); renderSecLog();
+  if(students.length>0&&Object.keys(otcMap).length===0) generateAllOTCs();
+  setInterval(updateClock,1000); updateClock();
+  const rh = document.getElementById('role-hdr');
+  rh.textContent = {owner:'👑 Owner',lecturer:'🎓 Lecturer',student:'✍️ Student (Logout)'}[role];
+  rh.className = 'role-chip '+(role==='owner'?'owner-chip':role==='lecturer'?'lect-chip':'student-chip');
+}
+
+function logout() {
+  currentRole=null; selectedHall=null; codeVerified=false; gpsOK=false;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.querySelectorAll('.role-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('pin-section').style.display='none';
+}
+
+/* ═══════════════════════════════════════════════
+   TABS — ROLE-BASED
+═══════════════════════════════════════════════ */
+const TAB_DEFS = {
+  owner:    [{id:'lecturer',label:'🎓 Session'},{id:'student',label:'✍️ Sign-In'},{id:'records',label:'📊 Records'},{id:'security',label:'🔐 Security'},{id:'setup',label:'⚙️ Setup'},{id:'settings',label:'🔧 Settings'}],
+  lecturer: [{id:'lecturer',label:'🎓 Session'},{id:'student',label:'✍️ Sign-In'},{id:'records',label:'📊 Records'},{id:'security',label:'🔐 Security'}],
+  student:  [{id:'student',label:'✍️ Sign In'}],
+};
+
+function buildTabs() {
+  const tabs = TAB_DEFS[currentRole] || TAB_DEFS.student;
+  const bar  = document.getElementById('tabbar');
+  const wrap = document.getElementById('panels-wrap');
+  bar.innerHTML=''; wrap.innerHTML='';
+  tabs.forEach((t,i)=>{
+    const btn=document.createElement('button');
+    btn.className='tab'+(i===0?' active':'');
+    btn.innerHTML=t.label;
+    btn.onclick=()=>switchTab(t.id,btn);
+    bar.appendChild(btn);
+    const panel=document.createElement('div');
+    panel.id='panel-'+t.id;
+    panel.className='panel'+(i===0?' active':'');
+    panel.innerHTML=buildPanel(t.id);
+    wrap.appendChild(panel);
+  });
+  afterBuild();
+}
+
+function switchTab(id,btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='records'){renderTable();updateFilterHall();}
+  if(id==='student'){updateStudentView();}
+  if(id==='security'){renderSecLog();}
+  if(id==='setup'){renderStudentTable();}
+}
+
+/* ═══════════════════════════════════════════════
+   PANEL HTML BUILDERS
+═══════════════════════════════════════════════ */
+function buildPanel(id) {
+  switch(id){
+    case 'lecturer': return buildLecturerPanel();
+    case 'student':  return buildStudentPanel();
+    case 'records':  return buildRecordsPanel();
+    case 'security': return buildSecurityPanel();
+    case 'setup':    return buildSetupPanel();
+    case 'settings': return buildSettingsPanel();
+    default: return '<div class="card">Coming soon</div>';
+  }
+}
+
+function buildLecturerPanel(){return`
+<div id="sbar-lect" class="sbar idle">
+  <div class="sbar-left"><div class="sdot"></div><div><div class="slbl">Current Session</div><div class="shall" id="lect-hall-nm">No active session</div></div></div>
+  <div class="sbar-right" id="lect-sbar-right">Select a hall and open attendance</div>
+</div>
+<div class="sec-badges">
+  <div class="sbadge on"><div class="sdot2"></div>QR + Session Code</div>
+  <div class="sbadge on"><div class="sdot2"></div>One-Time Code</div>
+  <div class="sbadge on"><div class="sdot2"></div>1 Device / Session</div>
+  <div class="sbadge ${CONFIG.gpsEnabled?'on':'off'}" id="gps-sbadge"><div class="sdot2"></div>GPS ${CONFIG.gpsEnabled?'ON ('+CONFIG.gpsRadius+'m)':'OFF'}</div>
+</div>
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">🏛️</div>Select Hall</div>
+  <div class="halls" id="halls-grid"></div>
+</div>
+<div class="g2">
+  <div class="card">
+    <div class="card-hd"><div class="hd-icon">📍</div>Set Hall GPS (Stand Inside Hall)</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">Lecturer stands <strong>inside the hall</strong>, then clicks the button below to save the exact GPS location. Students must be within <strong>${CONFIG.gpsRadius} metres</strong>.</p>
+    <div id="lect-gps-status" class="gps-box bypass" style="margin-bottom:10px"><span>📍</span><span>No GPS saved for selected hall yet</span></div>
+    <div class="btn-row" style="margin-top:0">
+      <button class="btn btn-blue" onclick="setHallGPS()">📍 Save My Location as This Hall</button>
+      <button class="btn btn-out" onclick="clearHallGPS()">🗑 Clear GPS</button>
+    </div>
+    <div id="gps-saved-coords" class="gps-accuracy" style="display:none;margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="hd-icon">🔑</div>QR Code &amp; Session Code</div>
+    <div id="qr-placeholder" style="text-align:center;padding:2rem;background:var(--bg);border-radius:var(--rsm);color:var(--muted);font-size:13px;">Open a session to generate QR code</div>
+    <div id="qr-area" style="display:none">
+      <div class="qr-center"><div class="qr-frame"><div class="qr-frame-title">EASTC — Scan to Attend</div><div id="qr-code"></div><div class="qr-code-big" id="session-code-disp">----</div><div class="qr-frame-sub">Scan QR or type code above</div></div></div>
+      <button class="btn btn-out" style="width:100%;margin-top:6px" onclick="regenCode()">🔄 Generate New Code</button>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">⚡</div>Session Controls</div>
+  <div class="btn-row">
+    <button class="btn btn-green" style="flex:1;max-width:200px;justify-content:center" onclick="openSession()">▶ Open Attendance</button>
+    <button class="btn btn-red" onclick="closeSession()">■ Close</button>
+    <button class="btn btn-out" onclick="regenAllOTC()">🔄 New OTC Codes</button>
+    <button class="btn btn-out" onclick="clearSessionRecs()">🗑 Clear Records</button>
+  </div>
+  <div id="sess-fb" class="fb" style="margin-top:1rem"></div>
+</div>
+<div class="stats" id="stats-grid">
+  <div class="stat"><div class="stat-n" id="st-signed">0</div><div class="stat-l">Signed</div></div>
+  <div class="stat"><div class="stat-n" id="st-total">0</div><div class="stat-l">Total</div></div>
+  <div class="stat"><div class="stat-n" id="st-absent">0</div><div class="stat-l">Absent</div></div>
+  <div class="stat"><div class="stat-n" id="st-pct">0%</div><div class="stat-l">Rate</div></div>
+</div>
+<div class="pbar-wrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">🔍</div>Look Up Student Code</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <input type="text" id="otc-lookup" placeholder="Enter registration number..." style="flex:1;min-width:200px">
+    <button class="btn btn-ink" onclick="lookupOTC()">Look Up</button>
+  </div>
+  <div id="otc-result" style="margin-top:10px"></div>
+</div>`;}
+
+function buildStudentPanel(){return`
+<div id="sbar-student" class="sbar idle">
+  <div class="sbar-left"><div class="sdot"></div><div><div class="slbl">Attendance open for</div><div class="shall" id="stud-hall-nm">No session — ask your lecturer</div></div></div>
+</div>
+<div class="card">
+  <div class="steps" id="steps-row">
+    <div class="step active" id="step-ind-1"><span class="step-num">1</span>Session Code</div>
+    <div class="step" id="step-ind-2"><span class="step-num">2</span>GPS Check</div>
+    <div class="step" id="step-ind-3"><span class="step-num">3</span>Sign In</div>
+  </div>
+  <div id="sign-step-1">
+    <label>Session Code (shown on board / scan QR)</label>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input type="text" id="code-input" maxlength="6" placeholder="e.g. A3K7" class="mono" style="font-size:20px;letter-spacing:4px;text-align:center;text-transform:uppercase;flex:1" oninput="this.value=this.value.toUpperCase()">
+      <button class="btn btn-blue" onclick="verifyCode()">Verify →</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted)">Enter the 4-character code your lecturer shows on the screen, or scan the QR code.</p>
+    <div id="code-fb" class="fb" style="margin-top:10px"></div>
+  </div>
+  <div id="sign-step-2" style="display:none">
+    <div id="gps-check-box" class="gps-box checking"><span>📡</span><span id="gps-msg">Checking your location...</span></div>
+    <div id="gps-detail" class="gps-accuracy" style="display:none"></div>
+  </div>
+  <div id="sign-step-3" style="display:none;margin-top:1rem">
+    <div style="margin-bottom:1rem">
+      <label>Your Registration Number</label>
+      <input type="text" id="reg-input" placeholder="EASTC/BDTS/26/001" class="mono" style="font-size:15px;letter-spacing:1px" onkeydown="if(event.key==='Enter')signIn()">
+    </div>
+    <div style="margin-bottom:1rem">
+      <label>Your One-Time Code (given by lecturer)</label>
+      <input type="text" id="otc-input" maxlength="8" placeholder="e.g. A7K2" class="mono" style="font-size:22px;letter-spacing:6px;text-align:center;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')signIn()">
+      <p style="font-size:11px;color:var(--muted);margin-top:4px">Each student has a unique code — it expires after one use.</p>
+    </div>
+    <button class="btn btn-green btn-lg" onclick="signIn()">✓ Sign My Attendance</button>
+    <div id="signin-fb" class="fb" style="margin-top:1rem"></div>
+  </div>
+</div>`;}
+
+function buildRecordsPanel(){return`
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">📊</div>Attendance Records</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">
+    <input type="text" id="search-in" placeholder="Search name or reg number..." style="flex:1;min-width:180px" oninput="renderTable()">
+    <select id="filter-hall" onchange="renderTable()" style="max-width:180px"><option value="">All Halls</option></select>
+  </div>
+  <div class="tbl-wrap" id="rec-tbl-wrap"><div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No records</div></div></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap">
+    <button class="btn btn-out" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn btn-ink" onclick="exportSummary()">📄 Summary</button>
+  </div>
+</div>`;}
+
+function buildSecurityPanel(){return`
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">🔐</div>Security Event Log</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+    <button class="btn btn-out" onclick="filterLog('all')">All</button>
+    <button class="btn btn-out" onclick="filterLog('ok')">✅ Approved</button>
+    <button class="btn btn-out" onclick="filterLog('bad')">❌ Denied</button>
+    <button class="btn btn-out" onclick="filterLog('warn')">⚠️ Warnings</button>
+    <button class="btn btn-red" style="margin-left:auto" onclick="if(confirm('Clear log?')){secLog=[];save('e3_seclog',secLog);renderSecLog();}">Clear</button>
+  </div>
+  <div id="sec-log-wrap"><div class="empty"><div class="empty-ico">🔐</div><div class="empty-t">No events</div></div></div>
+</div>`;}
+
+function buildSetupPanel(){return`
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">📁</div>Upload Student List</div>
+  <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+    <div style="font-size:32px;margin-bottom:8px">📂</div>
+    <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px">Click to upload Excel or CSV file</div>
+    <div style="font-size:12px;color:var(--muted)">Columns needed: NAME and REG/NO</div>
+    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" onchange="handleFile(event)">
+  </div>
+  <div id="upload-status" style="margin-top:1rem"></div>
+</div>
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">➕</div>Add Student Manually</div>
+  <div class="g2" style="margin-bottom:1rem">
+    <div><label>Full Name</label><input type="text" id="m-name" placeholder="e.g. Amina Hassan"></div>
+    <div><label>Registration Number</label><input type="text" id="m-reg" placeholder="e.g. EASTC/BDTS/26/001"></div>
+  </div>
+  <div class="btn-row" style="margin-top:0">
+    <button class="btn btn-ink" onclick="addStudent()">+ Add</button>
+    <button class="btn btn-gold" onclick="loadDemo()">📋 Load Demo (10)</button>
+  </div>
+  <div id="manual-fb" class="fb" style="margin-top:10px"></div>
+</div>
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">👥</div>Students: <span id="s-count">0</span></div>
+  <div class="tbl-wrap" id="stud-tbl-wrap"><div class="empty"><div class="empty-ico">👥</div><div class="empty-t">No students</div></div></div>
+  <div style="display:flex;justify-content:flex-end;margin-top:10px">
+    <button class="btn btn-red" onclick="clearStudents()">🗑 Clear All</button>
+  </div>
+</div>`;}
+
+function buildSettingsPanel(){return`
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">🔧</div>System Settings (Owner Only)</div>
+  <div class="g2" style="margin-bottom:1rem">
+    <div><label>New Owner PIN</label><input type="password" id="set-owner-pin" placeholder="4–6 digits"></div>
+    <div><label>New Lecturer PIN</label><input type="password" id="set-lect-pin" placeholder="4–6 digits"></div>
+  </div>
+  <button class="btn btn-ink" onclick="savePINs()">💾 Save PINs</button>
+  <div id="settings-fb" class="fb" style="margin-top:10px"></div>
+</div>
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">📍</div>GPS Settings</div>
+  <div class="g2" style="margin-bottom:1rem">
+    <div>
+      <label>Detection Radius (metres)</label>
+      <input type="number" id="set-radius" value="${CONFIG.gpsRadius}" min="1" max="500" step="1">
+      <p style="font-size:11px;color:var(--muted);margin-top:4px">Set 1–5 metres for classroom precision. Set 50–100 for building-level.</p>
+    </div>
+    <div>
+      <label>GPS Enforcement</label>
+      <select id="set-gps-enabled">
+        <option value="true" ${CONFIG.gpsEnabled?'selected':''}>Enabled — students must be in range</option>
+        <option value="false" ${!CONFIG.gpsEnabled?'selected':''}>Disabled — skip GPS check</option>
+      </select>
+    </div>
+  </div>
+  <button class="btn btn-blue" onclick="saveGPSSettings()">💾 Save GPS Settings</button>
+</div>
+<div class="card">
+  <div class="card-hd"><div class="hd-icon">🗑️</div>Data Management</div>
+  <div class="btn-row">
+    <button class="btn btn-out" onclick="exportAll()">⬇ Export All Data</button>
+    <button class="btn btn-red" onclick="if(confirm('RESET EVERYTHING?')){resetAll();}">⚠️ Reset All Data</button>
+  </div>
+</div>`;}
+
+/* ═══════════════════════════════════════════════
+   AFTER BUILD — wire up dynamic elements
+═══════════════════════════════════════════════ */
+function afterBuild(){
+  renderHalls(); updateSbars(); updateStats(); renderStudentTable();
+  updateFilterHall(); updateStudentView();
+  const sc=document.getElementById('s-count');
+  if(sc) sc.textContent=students.length;
+  if(session){ generateQR(); }
+}
+
+/* ═══════════════════════════════════════════════
+   CLOCK
+═══════════════════════════════════════════════ */
+function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+
+/* ═══════════════════════════════════════════════
+   HALLS
+═══════════════════════════════════════════════ */
+function renderHalls(){
+  const g=document.getElementById('halls-grid'); if(!g) return;
+  g.innerHTML=HALLS.map(h=>`
+    <div class="hcard ${selectedHall===h.id?'sel':''} ${session&&session.hallId===h.id?'open':''}" onclick="selectHall('${h.id}')">
+      ${session&&session.hallId===h.id?'<div class="open-tag">OPEN</div>':''}
+      ${hallGPS[h.id]?'<div class="gps-tag">GPS ✓</div>':''}
+      <div class="hico">${h.icon}</div>
+      <div class="hnm">${h.name}</div>
+      <div class="hsub">${hallGPS[h.id]?'📍 GPS set':'No GPS'}</div>
+    </div>`).join('');
+  updateLectGPSStatus();
+}
+
+function selectHall(id){ selectedHall=id; renderHalls(); }
+
+/* ═══════════════════════════════════════════════
+   GPS — LECTURER SETS HALL LOCATION (OFFLINE)
+═══════════════════════════════════════════════ */
+function setHallGPS(){
+  if(!selectedHall){ showFB('gps-saved-coords'?null:null,'err','⚠️','Select a hall first'); toast('err','Select a hall first'); return; }
+  const box=document.getElementById('lect-gps-status');
+  if(box){box.className='gps-box checking';box.innerHTML='<span>📡</span><span>Getting high-accuracy GPS location...</span>';}
+  // Use maximum accuracy GPS
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude, acc=pos.coords.accuracy;
+    hallGPS[selectedHall]={lat,lng,accuracy:acc,radius:CONFIG.gpsRadius,setAt:new Date().toISOString()};
+    save('e3_hallgps',hallGPS);
+    renderHalls();
+    if(box){box.className='gps-box ok';box.innerHTML=`<span>✅</span><span>GPS saved for ${HALLS.find(h=>h.id===selectedHall).name}</span>`;}
+    const coords=document.getElementById('gps-saved-coords');
+    if(coords){coords.style.display='block';coords.textContent=`Lat: ${lat.toFixed(7)} | Lng: ${lng.toFixed(7)} | Accuracy: ±${acc.toFixed(1)}m | Radius: ${CONFIG.gpsRadius}m | Saved: ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;}
+    toast('ok','📍 GPS saved for '+HALLS.find(h=>h.id===selectedHall).name);
+    logSec('ok',`GPS set for ${HALLS.find(h=>h.id===selectedHall).name} — lat:${lat.toFixed(5)} lng:${lng.toFixed(5)} acc:±${acc.toFixed(1)}m`);
+  }, err=>{
+    if(box){box.className='gps-box fail';box.innerHTML=`<span>❌</span><span>GPS error: ${err.message}</span>`;}
+    toast('err','GPS failed: '+err.message);
+  },{enableHighAccuracy:true,timeout:20000,maximumAge:0}); // maximumAge:0 = always fresh reading
+}
+
+function clearHallGPS(){
+  if(!selectedHall){toast('err','Select a hall first');return;}
+  delete hallGPS[selectedHall]; save('e3_hallgps',hallGPS); renderHalls();
+  updateLectGPSStatus(); toast('warn','GPS cleared for hall');
+}
+
+function updateLectGPSStatus(){
+  const box=document.getElementById('lect-gps-status');
+  const coords=document.getElementById('gps-saved-coords');
+  if(!box) return;
+  if(!selectedHall){box.className='gps-box bypass';box.innerHTML='<span>👆</span><span>Select a hall first</span>';return;}
+  const gps=hallGPS[selectedHall];
+  if(gps){
+    box.className='gps-box ok';
+    box.innerHTML=`<span>✅</span><span>GPS set for ${HALLS.find(h=>h.id===selectedHall).name} — radius: ${gps.radius||CONFIG.gpsRadius}m</span>`;
+    if(coords){coords.style.display='block';coords.textContent=`Lat: ${gps.lat.toFixed(7)} | Lng: ${gps.lng.toFixed(7)} | Accuracy: ±${(gps.accuracy||'?')}m | Set: ${gps.setAt?new Date(gps.setAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):''}`;}
+  } else {
+    box.className='gps-box bypass';box.innerHTML='<span>📍</span><span>No GPS saved — stand inside the hall and click Save</span>';
+    if(coords) coords.style.display='none';
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   GPS DISTANCE CALCULATION (Haversine)
+═══════════════════════════════════════════════ */
+function calcDist(lat1,lng1,lat2,lng2){
+  const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+/* ═══════════════════════════════════════════════
+   ONE-TIME CODES
+═══════════════════════════════════════════════ */
+function mkCode(n=4){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
+function generateAllOTCs(){otcMap={};students.forEach(s=>{otcMap[s.reg.toUpperCase()]=mkCode(4);});save('e3_otc',otcMap);}
+function regenAllOTC(){if(!confirm('Generate new codes for ALL students? Old codes will stop working.'))return;usedOTC=[];generateAllOTCs();save('e3_usedOTC',usedOTC);renderStudentTable();toast('ok','New one-time codes generated');}
+
+function lookupOTC(){
+  let reg=document.getElementById('otc-lookup').value.trim().toUpperCase();
+  if(!reg.startsWith('EASTC/')) reg='EASTC/'+reg;
+  const code=otcMap[reg], res=document.getElementById('otc-result');
+  if(!code){res.innerHTML=`<div class="fb show err"><span>❌</span> Student not found: ${reg}</div>`;return;}
+  const used=usedOTC.includes(code);
+  const s=students.find(x=>x.reg.toUpperCase()===reg);
+  res.innerHTML=`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--rsm);padding:1rem">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${s?s.name:reg}</div>
+    <div class="mono" style="font-size:30px;font-weight:700;letter-spacing:8px;color:var(--ink)">${code}</div>
+    <div style="margin-top:8px">${used?'<span class="badge b-red">USED — already signed</span>':'<span class="badge b-green">VALID — not yet used</span>'}</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   DEVICE FINGERPRINT
+═══════════════════════════════════════════════ */
+function getFingerprint(){
+  const d=[navigator.userAgent,navigator.language,screen.width+'x'+screen.height,new Date().getTimezoneOffset()].join('|');
+  let h=0;for(let i=0;i<d.length;i++){h=((h<<5)-h)+d.charCodeAt(i);h|=0;}return 'fp_'+Math.abs(h).toString(36);
+}
+
+/* ═══════════════════════════════════════════════
+   SESSION
+═══════════════════════════════════════════════ */
+function openSession(){
+  if(!selectedHall){showFB('sess-fb','err','⚠️','Select a hall first');return;}
+  if(students.length===0){showFB('sess-fb','warn','⚠️','No students — go to Setup tab');return;}
+  const code=mkCode(4);
+  session={hallId:selectedHall,hallName:HALLS.find(h=>h.id===selectedHall).name,code,openedAt:new Date().toISOString(),id:'s_'+Date.now()};
+  save('e3_session',session);
+  deviceLog[session.id]=[];save('e3_devices',deviceLog);
+  updateSbars();renderHalls();generateQR();updateStats();updateStudentView();
+  showFB('sess-fb','ok','✅',`Attendance opened for ${session.hallName} — Code: ${code}`);
+  toast('ok','✅ Session open — Code: '+code);
+  logSec('ok',`Session opened: ${session.hallName} code:${code}`);
+  codeVerified=false;gpsOK=false;
+}
+
+function closeSession(){
+  if(!session){toast('err','No session');return;}
+  logSec('warn',`Session closed: ${session.hallName}`);
+  session=null;save('e3_session',null);
+  const qa=document.getElementById('qr-area'), qp=document.getElementById('qr-placeholder');
+  if(qa) qa.style.display='none';if(qp) qp.style.display='block';
+  updateSbars();renderHalls();updateStats();updateStudentView();
+  codeVerified=false;gpsOK=false;
+  toast('warn','Session closed');
+}
+
+function clearSessionRecs(){
+  if(!confirm('Clear all records for current session?'))return;
+  const hid=session?session.hallId:selectedHall;
+  attendance=attendance.filter(a=>a.hallId!==hid);saveAttendance();updateStats();renderTable();
+  toast('warn','Session records cleared');
+}
+
+function updateSbars(){
+  ['lect','student'].forEach(id=>{
+    const bar=document.getElementById('sbar-'+id);if(!bar)return;
+    const hall=document.getElementById(id==='lect'?'lect-hall-nm':'stud-hall-nm');
+    if(session){bar.className='sbar live';if(hall)hall.textContent=session.hallName;}
+    else{bar.className='sbar idle';if(hall)hall.textContent=id==='lect'?'No active session':'No session — ask your lecturer';}
+  });
+  const sr=document.getElementById('lect-sbar-right');
+  if(sr) sr.textContent=session?`● OPEN  •  Code: ${session.code}  •  Opened: ${new Date(session.openedAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'Select a hall and open attendance';
+  const hp=document.getElementById('sess-hdr-pill');
+  if(hp){hp.textContent=session?session.hallName:'No Session';hp.className=session?'role-chip lect-chip':'role-chip';}
+}
+
+/* ═══════════════════════════════════════════════
+   QR CODE
+═══════════════════════════════════════════════ */
+function generateQR(){
+  const area=document.getElementById('qr-area'),ph=document.getElementById('qr-placeholder'),el=document.getElementById('qr-code');
+  if(!area||!el)return;
+  el.innerHTML='';area.style.display='block';if(ph)ph.style.display='none';
+  const cd=document.getElementById('session-code-disp');if(cd)cd.textContent=session.code;
+  try{new QRCode(el,{text:session.code,width:150,height:150,colorDark:'#0a0f1e',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}
+  catch(e){el.innerHTML=`<div style="font-size:40px;padding:20px;background:var(--bg);border-radius:8px;font-family:'JetBrains Mono',monospace">${session.code}</div>`;}
+}
+
+function regenCode(){if(!session)return;session.code=mkCode(4);save('e3_session',session);generateQR();updateSbars();toast('ok','New code: '+session.code);logSec('warn','Code regenerated: '+session.code);}
+
+/* ═══════════════════════════════════════════════
+   STUDENT SIGN-IN FLOW
+═══════════════════════════════════════════════ */
+function updateStudentView(){
+  const sb=document.getElementById('sbar-student');if(!sb)return;
+  updateSbars();
+  setStep(1); codeVerified=false; gpsOK=false;
+  const ci=document.getElementById('code-input');if(ci)ci.value='';
+  const ri=document.getElementById('reg-input');if(ri)ri.value='';
+  const oi=document.getElementById('otc-input');if(oi)oi.value='';
+  hideFB('code-fb');hideFB('signin-fb');
+}
+
+function setStep(n){
+  [1,2,3].forEach(i=>{
+    const s=document.getElementById('sign-step-'+i);if(s)s.style.display=i===n?'block':'none';
+    const ind=document.getElementById('step-ind-'+i);if(ind){ind.className='step'+(i<n?' done':i===n?' active':'');}
+  });
+}
+
+function verifyCode(){
+  const entered=(document.getElementById('code-input')?.value||'').trim().toUpperCase();
+  if(!session){showFB('code-fb','err','🔒','No session is open. Wait for your lecturer.');logSec('bad','Code attempt — no session');return;}
+  if(entered!==session.code){showFB('code-fb','err','❌','Wrong session code. Check and try again.');logSec('bad','Wrong code: '+entered);return;}
+  codeVerified=true;
+  logSec('ok','Session code verified');
+  const hgps=hallGPS[session.hallId];
+  if(CONFIG.gpsEnabled&&hgps){
+    setStep(2); runGPSCheck(hgps);
+  } else {
+    gpsOK=true;
+    setStep(2);
+    const gb=document.getElementById('gps-check-box');
+    if(gb){gb.className='gps-box bypass';gb.innerHTML='<span>ℹ️</span><span>GPS check not set for this hall — proceeding</span>';}
+    setTimeout(()=>setStep(3),800);
+  }
+}
+
+function runGPSCheck(hgps){
+  const gb=document.getElementById('gps-check-box');
+  const gd=document.getElementById('gps-detail');
+  if(gb){gb.className='gps-box checking';gb.innerHTML='<span>📡</span><span id="gps-msg">Getting your precise location... (stay still)</span>';}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    userLat=pos.coords.latitude;userLng=pos.coords.longitude;userAccuracy=pos.coords.accuracy;
+    const dist=calcDist(userLat,userLng,hgps.lat,hgps.lng);
+    const radius=hgps.radius||CONFIG.gpsRadius;
+    const distRounded=dist.toFixed(1);
+    if(gd){gd.style.display='block';gd.textContent=`Your position: ${userLat.toFixed(6)}, ${userLng.toFixed(6)}\nDevice accuracy: ±${userAccuracy.toFixed(1)}m | Distance to hall: ${distRounded}m | Max allowed: ${radius}m`;}
+    if(dist<=radius){
+      if(gb){gb.className='gps-box ok';gb.innerHTML=`<span>✅</span><span>You are inside ${session.hallName} (${distRounded}m away — within ${radius}m)</span>`;}
+      gpsOK=true;logSec('ok',`GPS OK — ${distRounded}m from hall (max ${radius}m)`);
+      setTimeout(()=>setStep(3),800);
+    } else {
+      if(gb){gb.className='gps-box fail';gb.innerHTML=`<span>❌</span><span>You are too far from ${session.hallName} — ${distRounded}m away. You must be within ${radius}m. Move closer.</span>`;}
+      logSec('bad',`GPS denied — ${distRounded}m away (max ${radius}m)`);
+      gpsOK=false;
+    }
+  },err=>{
+    if(gb){gb.className='gps-box fail';gb.innerHTML=`<span>❌</span><span>Cannot get your location: ${err.message}. Enable GPS on your device.</span>`;}
+    logSec('bad','GPS error: '+err.message);
+  },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+}
+
+function signIn(){
+  if(!session){showFB('signin-fb','err','🔒','No session open');return;}
+  if(!codeVerified){showFB('signin-fb','err','⚠️','Verify session code first');return;}
+  if(CONFIG.gpsEnabled&&hallGPS[session.hallId]&&!gpsOK){showFB('signin-fb','err','📍','GPS check not passed');return;}
+
+  let reg=(document.getElementById('reg-input')?.value||'').trim().toUpperCase();
+  const otcIn=(document.getElementById('otc-input')?.value||'').trim().toUpperCase();
+  if(!reg){showFB('signin-fb','err','⚠️','Enter your registration number');return;}
+  if(!otcIn){showFB('signin-fb','err','⚠️','Enter your one-time code');return;}
+  if(!reg.startsWith('EASTC/')) reg='EASTC/'+reg;
+
+  // 1 — Student exists?
+  const student=students.find(s=>s.reg.toUpperCase().replace(/\s/g,'')===reg.replace(/\s/g,''));
+  if(!student){showFB('signin-fb','err','❌','Registration number not found. Check carefully.');logSec('bad','Unknown reg: '+reg);return;}
+
+  // 2 — OTC correct?
+  const expectedOTC=otcMap[reg];
+  if(!expectedOTC){showFB('signin-fb','err','❌','No code assigned. Contact lecturer.');return;}
+  if(otcIn!==expectedOTC){showFB('signin-fb','err','❌','Wrong one-time code for your registration number.');logSec('bad',`Wrong OTC — ${reg}: entered ${otcIn}, expected ${expectedOTC}`);return;}
+
+  // 3 — OTC already used?
+  if(usedOTC.includes(expectedOTC)){showFB('signin-fb','warn','⚠️','Your one-time code has already been used. You may have already signed.');logSec('bad','OTC reuse: '+reg);return;}
+
+  // 4 — Already signed this session?
+  if(attendance.find(a=>a.reg===student.reg&&a.hallId===session.hallId)){showFB('signin-fb','warn','⚠️','You already signed for this session!');logSec('bad','Duplicate sign: '+reg);return;}
+
+  // 5 — Device check
+  const fp=getFingerprint();
+  const devs=deviceLog[session.id]||[];
+  if(devs.includes(fp)){showFB('signin-fb','err','🖥️','This device has already been used this session. One device per student.');logSec('bad','Device reuse: '+reg+' fp:'+fp);return;}
+
+  // ALL CLEAR
+  const rec={reg:student.reg,name:student.name,hallId:session.hallId,hallName:session.hallName,time:new Date().toISOString(),date:new Date().toLocaleDateString('en-GB'),lat:userLat,lng:userLng,accuracy:userAccuracy,device:fp};
+  attendance.push(rec);
+  usedOTC.push(expectedOTC);devs.push(fp);deviceLog[session.id]=devs;
+  saveAttendance();save('e3_usedOTC',usedOTC);save('e3_devices',deviceLog);
+  updateStats();renderTable();
+  logSec('ok',`✅ SIGNED IN: ${student.name} (${reg}) @ ${session.hallName}`);
+  showFB('signin-fb','ok','✅',`Welcome, ${student.name}! Attendance recorded for ${session.hallName}.`);
+  toast('ok','✅ '+student.name+' signed in');
+  setTimeout(()=>{
+    document.getElementById('reg-input').value='';
+    document.getElementById('otc-input').value='';
+    codeVerified=false;gpsOK=false;userLat=null;userLng=null;
+    updateStudentView();
+  },3000);
+}
+
+/* ═══════════════════════════════════════════════
+   STATS
+═══════════════════════════════════════════════ */
+function updateStats(){
+  const total=students.length;
+  const signed=session?attendance.filter(a=>a.hallId===session.hallId).length:attendance.length;
+  const absent=Math.max(0,total-signed);
+  const pct=total>0?Math.round((signed/total)*100):0;
+  const el=id=>document.getElementById(id);
+  if(el('st-signed'))el('st-signed').textContent=signed;
+  if(el('st-total'))el('st-total').textContent=total;
+  if(el('st-absent'))el('st-absent').textContent=absent;
+  if(el('st-pct'))el('st-pct').textContent=pct+'%';
+  if(el('pbar'))el('pbar').style.width=pct+'%';
+}
+
+/* ═══════════════════════════════════════════════
+   RECORDS TABLE
+═══════════════════════════════════════════════ */
+function renderTable(){
+  const wrap=document.getElementById('rec-tbl-wrap');if(!wrap)return;
+  const search=(document.getElementById('search-in')?.value||'').toLowerCase();
+  const hf=document.getElementById('filter-hall')?.value||'';
+  let rows=[...attendance];
+  if(search)rows=rows.filter(r=>r.name.toLowerCase().includes(search)||r.reg.toLowerCase().includes(search));
+  if(hf)rows=rows.filter(r=>r.hallId===hf);
+  rows.sort((a,b)=>new Date(b.time)-new Date(a.time));
+  if(!rows.length){wrap.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No records</div><div class="empty-s">${attendance.length===0?'Open a session first':'No matches'}</div></div>`;return;}
+  wrap.innerHTML=`<table><thead><tr><th>#</th><th>Name</th><th>Reg Number</th><th>Hall</th><th>Date</th><th>Time</th><th>GPS</th></tr></thead><tbody>${rows.map((r,i)=>`<tr>
+    <td style="color:var(--muted);font-size:11px">${i+1}</td>
+    <td><strong>${r.name}</strong></td>
+    <td class="mono" style="font-size:11px">${r.reg}</td>
+    <td><span class="badge b-blue">${r.hallName}</span></td>
+    <td>${r.date}</td>
+    <td class="mono" style="font-size:11px">${new Date(r.time).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</td>
+    <td>${r.lat?`<span class="badge b-green">✓ ${r.accuracy?'±'+r.accuracy.toFixed(0)+'m':'GPS'}</span>`:'<span class="badge b-gray">N/A</span>'}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+function updateFilterHall(){const s=document.getElementById('filter-hall');if(!s)return;s.innerHTML='<option value="">All Halls</option>'+HALLS.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');}
+
+/* ═══════════════════════════════════════════════
+   SECURITY LOG
+═══════════════════════════════════════════════ */
+function logSec(type,msg){secLog.unshift({type,msg,time:new Date().toISOString()});if(secLog.length>300)secLog=secLog.slice(0,300);save('e3_seclog',secLog);renderSecLog();}
+function filterLog(f){renderSecLog(f);}
+function renderSecLog(filter='all'){
+  const wrap=document.getElementById('sec-log-wrap');if(!wrap)return;
+  let entries=filter==='all'?secLog:secLog.filter(e=>e.type===filter);
+  if(!entries.length){wrap.innerHTML=`<div class="empty"><div class="empty-ico">🔐</div><div class="empty-t">No events</div></div>`;return;}
+  wrap.innerHTML=entries.map(e=>`<div class="log-entry ${e.type}"><span class="log-time">${new Date(e.time).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span><span>${e.type==='ok'?'✅':e.type==='bad'?'❌':'⚠️'} ${e.msg}</span></div>`).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   STUDENTS
+═══════════════════════════════════════════════ */
+function addStudent(){
+  const name=document.getElementById('m-name').value.trim();
+  let reg=document.getElementById('m-reg').value.trim().toUpperCase();
+  if(!name||!reg){showFB('manual-fb','err','⚠️','Fill both fields');return;}
+  if(!reg.startsWith('EASTC/'))reg='EASTC/'+reg;
+  if(students.find(s=>s.reg===reg)){showFB('manual-fb','err','⚠️','Reg number already exists');return;}
+  students.push({name,reg});saveStudents();
+  otcMap[reg]=mkCode(4);save('e3_otc',otcMap);
+  document.getElementById('m-name').value='';document.getElementById('m-reg').value='';
+  showFB('manual-fb','ok','✅',name+' added');renderStudentTable();updateStats();
+}
+
+function loadDemo(){
+  const demo=[
+    {name:'Amina Hassan',reg:'EASTC/BDTS/26/001'},{name:'John Mwangi',reg:'EASTC/BDTS/26/002'},
+    {name:'Grace Nyambura',reg:'EASTC/BDTS/26/003'},{name:'Mohamed Ali',reg:'EASTC/BDTS/26/004'},
+    {name:'Sarah Kimani',reg:'EASTC/BDTS/26/005'},{name:'Peter Odhiambo',reg:'EASTC/BDTS/26/006'},
+    {name:'Fatuma Juma',reg:'EASTC/BDTS/26/007'},{name:'David Kariuki',reg:'EASTC/BDTS/26/008'},
+    {name:'Joyce Wambui',reg:'EASTC/BDTS/26/009'},{name:'Hassan Omari',reg:'EASTC/BDTS/26/010'},
+  ];
+  demo.forEach(s=>{if(!students.find(x=>x.reg===s.reg)){students.push(s);otcMap[s.reg]=mkCode(4);}});
+  saveStudents();save('e3_otc',otcMap);renderStudentTable();updateStats();toast('ok','Demo students loaded');
+}
+
+function clearStudents(){if(!confirm('Clear all students?'))return;students=[];otcMap={};saveStudents();save('e3_otc',{});renderStudentTable();updateStats();}
+function removeStudent(reg){students=students.filter(s=>s.reg!==reg);delete otcMap[reg];saveStudents();save('e3_otc',otcMap);renderStudentTable();updateStats();}
+
+function renderStudentTable(){
+  const wrap=document.getElementById('stud-tbl-wrap');if(!wrap)return;
+  const sc=document.getElementById('s-count');if(sc)sc.textContent=students.length;
+  if(!students.length){wrap.innerHTML=`<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">No students</div></div>`;return;}
+  const show=students.slice(0,300);
+  wrap.innerHTML=`<table><thead><tr><th>#</th><th>Name</th><th>Reg Number</th><th>OTC Code</th><th>Status</th><th></th></tr></thead><tbody>${show.map((s,i)=>`<tr>
+    <td style="color:var(--muted);font-size:11px">${i+1}</td>
+    <td>${s.name}</td>
+    <td class="mono" style="font-size:11px">${s.reg}</td>
+    <td class="mono" style="font-size:14px;font-weight:700;letter-spacing:4px">${otcMap[s.reg]||'—'}</td>
+    <td>${usedOTC.includes(otcMap[s.reg])?'<span class="badge b-red">USED</span>':'<span class="badge b-green">VALID</span>'}</td>
+    <td><button onclick="removeStudent('${s.reg}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:13px">✕</button></td>
+  </tr>`).join('')}${students.length>300?`<tr><td colspan="6" style="text-align:center;color:var(--muted);font-size:11px;padding:10px">...and ${students.length-300} more</td></tr>`:''}</tbody></table>`;
+}
+
+/* ═══════════════════════════════════════════════
+   FILE UPLOAD
+═══════════════════════════════════════════════ */
+function handleFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const status=document.getElementById('upload-status');
+  status.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px">⏳ Processing file...</div>';
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const json=XLSX.utils.sheet_to_json(ws);
+      let added=0,skipped=0;
+      json.forEach(row=>{
+        const reg=(row['REG/NO']||row['Reg No']||row['Registration Number']||row['RegNo']||'').toString().trim().toUpperCase();
+        const name=(row['NAME']||row['Name']||row['FULL NAME']||row['Full Name']||'').toString().trim();
+        if(!reg){skipped++;return;}
+        const full=reg.startsWith('EASTC/')?reg:'EASTC/'+reg;
+        if(students.find(s=>s.reg===full)){skipped++;return;}
+        students.push({name:name||'Student '+(students.length+1),reg:full});
+        otcMap[full]=mkCode(4);added++;
+      });
+      saveStudents();save('e3_otc',otcMap);renderStudentTable();updateStats();
+      status.innerHTML=`<div class="fb show ok"><span>✅</span><strong>${added} students imported</strong> from ${file.name}${skipped>0?' ('+skipped+' skipped)':''}</div>`;
+      toast('ok',added+' students imported');
+    }catch(err){status.innerHTML=`<div class="fb show err"><span>❌</span>Error: ${err.message}</div>`;}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ═══════════════════════════════════════════════
+   SETTINGS (OWNER)
+═══════════════════════════════════════════════ */
+function savePINs(){
+  const op=document.getElementById('set-owner-pin')?.value.trim();
+  const lp=document.getElementById('set-lect-pin')?.value.trim();
+  if(op){CONFIG.ownerPIN=op;localStorage.setItem('cfg_ownerPIN',op);}
+  if(lp){CONFIG.lecturerPIN=lp;localStorage.setItem('cfg_lecturerPIN',lp);}
+  showFB('settings-fb','ok','✅','PINs saved');toast('ok','PINs updated');
+}
+
+function saveGPSSettings(){
+  const r=parseFloat(document.getElementById('set-radius')?.value)||5;
+  const en=document.getElementById('set-gps-enabled')?.value==='true';
+  CONFIG.gpsRadius=r;CONFIG.gpsEnabled=en;
+  localStorage.setItem('cfg_gpsRadius',r);localStorage.setItem('cfg_gpsEnabled',en);
+  const badge=document.getElementById('gps-sbadge');
+  if(badge){badge.className=`sbadge ${en?'on':'off'}`;badge.innerHTML=`<div class="sdot2"></div>GPS ${en?'ON ('+r+'m)':'OFF'}`;}
+  showFB('settings-fb','ok','✅',`GPS: ${en?'Enabled at '+r+'m':'Disabled'}`);toast('ok','GPS settings saved');
+}
+
+function resetAll(){
+  ['e3_students','e3_attendance','e3_otc','e3_usedOTC','e3_devices','e3_seclog','e3_session','e3_hallgps'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+
+function exportAll(){
+  const data={students,attendance,hallGPS,secLog,exportedAt:new Date().toISOString()};
+  dl(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'EASTC_backup_'+new Date().toLocaleDateString('en-GB').replace(/\//g,'-')+'.json');
+  toast('ok','Full backup exported');
+}
+
+/* ═══════════════════════════════════════════════
+   EXPORT
+═══════════════════════════════════════════════ */
+function exportCSV(){
+  if(!attendance.length){toast('err','No records');return;}
+  const hdr=['Name','Reg Number','Hall','Date','Time','GPS','Accuracy'];
+  const rows=attendance.map(r=>[r.name,r.reg,r.hallName,r.date,new Date(r.time).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),r.lat?'Yes':'No',r.accuracy?'±'+r.accuracy.toFixed(1)+'m':'N/A']);
+  dl(new Blob([[hdr,...rows].map(r=>r.join(',')).join('\n')],{type:'text/csv'}),'EASTC_Attendance.csv');
+  toast('ok','CSV exported');
+}
+
+function exportSummary(){
+  if(!attendance.length){toast('err','No records');return;}
+  let lines=['EASTC BDS 1 ATTENDANCE SUMMARY','Generated: '+new Date().toLocaleString('en-GB'),'='.repeat(50),''];
+  HALLS.forEach(h=>{const s=attendance.filter(a=>a.hallId===h.id);if(s.length){lines.push('Hall: '+h.name+' ('+s.length+' students)');lines.push('-'.repeat(40));s.forEach((r,i)=>lines.push((i+1)+'. '+r.name+' — '+r.reg+(r.lat?' [GPS ✓]':'')));lines.push('');}});
+  lines.push('Total Signed: '+attendance.length);
+  dl(new Blob([lines.join('\n')],{type:'text/plain'}),'EASTC_Summary.txt');
+  toast('ok','Summary exported');
+}
+
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();}
+
+/* ═══════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════ */
+function save(key,val){localStorage.setItem(key,JSON.stringify(val));}
+function saveStudents(){save('e3_students',students);const sc=document.getElementById('s-count');if(sc)sc.textContent=students.length;}
+function saveAttendance(){save('e3_attendance',attendance);}
+function showFB(id,type,icon,msg){const el=document.getElementById(id);if(!el)return;el.className='fb show '+type;el.innerHTML=`<span>${icon}</span><span>${msg}</span>`;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),6000);}
+function hideFB(id){const el=document.getElementById(id);if(el)el.classList.remove('show');}
+function toast(type,msg){const t=document.getElementById('toast');document.getElementById('t-ico').textContent=type==='ok'?'✓':'!';document.getElementById('t-msg').textContent=msg;t.className='toast show t-'+(type==='ok'?'ok':type==='warn'?'warn':'err');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),3500);}
+</script>
+</body>
+</html>
